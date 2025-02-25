@@ -7,10 +7,10 @@ from loguru import logger
 from training.trainer import Trainer
 from models import get_model
 
-from peernet.networks import ZMQ_Pair
+from PEERNet_fl.peernet.networks import ZMQ_Pair
 
 
-class FederatedClient:
+class FLClient:
     """
     A client for federated learning, responsible for local training and model updates.
 
