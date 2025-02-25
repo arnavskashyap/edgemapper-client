@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 
 from collections import OrderedDict
-from .layers import *
+from models.repmono.layers import ConvBlock, Conv3x3, upsample
 
 
 class DepthDecoder(nn.Module):
@@ -53,6 +53,8 @@ class DepthDecoder(nn.Module):
 
         self.decoder = nn.ModuleList(list(self.convs.values()))
         self.sigmoid = nn.Sigmoid()
+
+        self.outputs = {}
 
     def forward(self, input_features):
         self.outputs = {}
