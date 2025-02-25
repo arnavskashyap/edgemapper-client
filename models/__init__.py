@@ -1,11 +1,15 @@
 from torch import nn as nn
 from models.guide_depth import GuideDepthModel
-from models.repmono import RepMonoModel
+from models.repmono_depth import RepMonoSupervisedModel, RepMonoUnsupervisedModel
 
-SUPPORTED_MODELS = {"guidedepth": GuideDepthModel, "repmono": RepMonoModel}
+SUPPORTED_MODELS = {
+    "guidedepth": GuideDepthModel,
+    "repmono-u": RepMonoUnsupervisedModel,
+    "repmono-s": RepMonoSupervisedModel
+}
 
 
-def get_model(model_name: str, model_params: str = None) -> nn.Module:
+def get_model(model_name: str, model_params=None) -> nn.Module:
     """
     Returns the model class based on the given name.
     :param model_name: Name of the model (e.g., "guidedepth", "repmono").

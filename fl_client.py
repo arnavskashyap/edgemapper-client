@@ -1,12 +1,11 @@
+from typing import Optional
+
 import torch
-import requests
-import json
 import omegaconf
+from loguru import logger
 
 from training.trainer import Trainer
 from models import get_model
-
-from loguru import logger
 
 from peernet.networks import ZMQ_Pair
 
@@ -26,10 +25,10 @@ class FederatedClient:
                  device_name: str,
                  model_name: str,
                  training_data_path: str,
+                 val_data_path: Optional[str],
                  batch_size: int = 8,
                  local_epochs: int = 15,
                  lr: float = 1e-4,
-                 val_data_path: str = None,
                  model_params=None,
                  loss_func=None):
 

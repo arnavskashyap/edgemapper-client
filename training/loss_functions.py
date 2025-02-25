@@ -1,7 +1,90 @@
 import torch
 import torch.nn.functional as F
 
+from models.repmono.layers import SSIM, get_smooth_loss
+
 from math import exp
+
+
+class RepMonoUnsupervisedLoss():
+
+    def __init__(self):
+        self.scales = [0, 1, 2]
+        self.ssim = SSIM()
+
+    def compute_reprojection_loss(self, pred, target):
+        """Computes reprojection loss between a batch of predicted and target images
+        """
+        abs_diff = torch.abs(target - pred)
+        l1_loss = abs_diff.mean(1, True)
+
+        ssim_loss = self.ssim(pred, target).mean(1, True)
+        reprojection_loss = 0.85 * ssim_loss + 0.15 * l1_loss
+
+        return reprojection_loss
+
+    def __call__(self, inputs, outputs):
+        """Compute the reprojection and smoothness losses for a minibatch
+        """
+
+        losses = {}
+        total_loss = 0
+
+        frame_ids = [0, -1, 1]
+
+        for scale in self.scales:
+            loss = 0
+            reprojection_losses = []
+
+            source_scale = 0
+
+            disp = outputs[("disp", scale)]
+            color = inputs[("color", 0, scale)]
+            target = inputs[("color", 0, source_scale)]
+
+            for frame_id in frame_ids[1:]:
+                pred = outputs[("color", frame_id, scale)]
+                reprojection_losses.append(
+                    self.compute_reprojection_loss(pred, target))
+
+            reprojection_losses = torch.cat(reprojection_losses, 1)
+
+            identity_reprojection_losses = []
+            for frame_id in frame_ids[1:]:
+                pred = inputs[("color", frame_id, source_scale)]
+                identity_reprojection_losses.append(
+                    self.compute_reprojection_loss(pred, target))
+
+            identity_reprojection_losses = torch.cat(
+                identity_reprojection_losses, 1)
+
+            # add random numbers to break ties
+            identity_reprojection_loss += torch.randn(
+                identity_reprojection_loss.shape) * 0.00001
+
+            combined = torch.cat(
+                (identity_reprojection_losses, reprojection_losses), dim=1)
+
+            if combined.shape[1] == 1:
+                to_optimise = combined
+            else:
+                to_optimise, idxs = torch.min(combined, dim=1)
+
+            outputs["identity_selection/{}".format(scale)] = (
+                idxs > identity_reprojection_loss.shape[1] - 1).float()
+
+            loss += to_optimise.mean()
+
+            mean_disp = disp.mean(2, True).mean(3, True)
+            norm_disp = disp / (mean_disp + 1e-7)
+            smooth_loss = get_smooth_loss(norm_disp, color)
+
+            loss += 1e-3 * smooth_loss / (2**scale)
+            total_loss += loss
+            losses["loss/{}".format(scale)] = loss
+
+        total_loss /= len(self.scales)
+        return total_loss
 
 
 class DepthLoss():

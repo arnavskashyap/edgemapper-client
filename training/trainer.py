@@ -1,6 +1,6 @@
 import time
 import os
-
+from typing import Optional
 import torch
 from torch import nn as nn
 from torch import optim as optim
@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from dataset.data_loader import ImageDataset
 from models import get_model
-from training.loss_functions import DepthLoss
+from training.loss_functions import DepthLoss, RepMonoUnsupervisedLoss
 from training.metrics import AverageMeter, Result, plot_metrics
 from utils.checkpoint import save_checkpoint, load_checkpoint
 
@@ -25,7 +25,7 @@ class Trainer:
                  device: torch.device,
                  batch_size: int,
                  lr: float,
-                 val_dataset_path: str = None,
+                 val_dataset_path: Optional[str],
                  loss_function=None):
         """
         Initialize the trainer.
