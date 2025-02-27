@@ -65,16 +65,17 @@ class GuideDepthModel(BaseDepthModel):
         :param x: Input RGB image tensor of shape (B, 3, H, W).
         :return: Predicted depth map tensor of shape (B, 1, H, W).
         """
-        y: Tensor = self.feature_extractor(x)
+        x = x["image"]
+        y = self.feature_extractor(x)
 
-        x_half: Tensor = F.interpolate(x,
-                                       scale_factor=0.5,
-                                       mode='bilinear',
-                                       align_corners=False)
-        x_quarter: Tensor = F.interpolate(x,
-                                          scale_factor=0.25,
-                                          mode='bilinear',
-                                          align_corners=False)
+        x_half = F.interpolate(x,
+                               scale_factor=0.5,
+                               mode='bilinear',
+                               align_corners=False)
+        x_quarter = F.interpolate(x,
+                                  scale_factor=0.25,
+                                  mode='bilinear',
+                                  align_corners=False)
 
         y = F.interpolate(y,
                           scale_factor=2,
