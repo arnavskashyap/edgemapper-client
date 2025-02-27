@@ -95,7 +95,7 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         Returns:
             Tensor: Predicted depth map tensor of shape (B, 1, H, W).
         """
-        features = self.encoder(x)
+        features = self.encoder(x["image", 0, 0])
         depth_outputs = self.decoder(features)
         depth_outputs.update(self._predict_poses(x))
         self._generate_images_pred(x, depth_outputs)
@@ -108,30 +108,26 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
 
         # select what features the pose network takes as input
         frame_ids = [0, -1, 1]
-        pose_features = {f_i: inputs["color_aug", f_i, 0] for f_i in frame_ids}
+        pose_features = {f_i: inputs["image_aug", f_i, 0] for f_i in frame_ids}
 
         for f_i in frame_ids[1:]:
-            if f_i != "s":
-                # To maintain ordering we always pass frames in temporal order
-                if f_i < 0:
-                    pose_inputs = [pose_features[f_i], pose_features[0]]
-                else:
-                    pose_inputs = [pose_features[0], pose_features[f_i]]
+            # To maintain ordering we always pass frames in temporal order
+            if f_i < 0:
+                pose_inputs = [pose_features[f_i], pose_features[0]]
+            else:
+                pose_inputs = [pose_features[0], pose_features[f_i]]
 
-                pose_inputs = [self.pose_encoder(torch.cat(pose_inputs, 1))]
+            pose_inputs = [self.pose_encoder(torch.cat(pose_inputs, 1))]
 
-                axisangle, translation = self.pose_decoder(pose_inputs)
-                outputs[("axisangle", 0, f_i)] = axisangle
-                outputs[("translation", 0, f_i)] = translation
+            axisangle, translation = self.pose_decoder(pose_inputs)
+            outputs[("axisangle", 0, f_i)] = axisangle
+            outputs[("translation", 0, f_i)] = translation
 
-                # Invert the matrix if the frame id is negative
-                outputs[("cam_T_cam", 0,
-                         f_i)] = transformation_from_parameters(axisangle[:,
-                                                                          0],
-                                                                translation[:,
-                                                                            0],
-                                                                invert=(f_i
-                                                                        < 0))
+            # Invert the matrix if the frame id is negative
+            outputs[("cam_T_cam", 0,
+                     f_i)] = transformation_from_parameters(axisangle[:, 0],
+                                                            translation[:, 0],
+                                                            invert=(f_i < 0))
         return outputs
 
     def _generate_images_pred(self, inputs, outputs):

@@ -26,7 +26,7 @@ class FLClient:
                  model_name: str,
                  training_data_path: str,
                  val_data_path: Optional[str],
-                 batch_size: int = 8,
+                 batch_size: int = 4,
                  local_epochs: int = 15,
                  lr: float = 1e-4,
                  model_params=None,
@@ -35,15 +35,13 @@ class FLClient:
         # Establish connection to server
         self.device_name = device_name
         self.net_config = omegaconf.OmegaConf.load("net_config.yaml")
-        self.network = ZMQ_Pair(device_name=device_name,
-                                start_port=10000,
-                                **self.net_config)
+        self.network = ZMQ_Pair(device_name=device_name, **self.net_config)
         logger.info("Connected to server")
 
         # Initialize Model
         self.device = torch.device(
             'cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.model = get_model(model_name, model_params).to(self.device)
+        self.model = get_model(model_name, **model_params).to(self.device)
 
         self.trainer = Trainer(
             self.model,

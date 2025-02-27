@@ -4,12 +4,13 @@ from typing import Optional
 import torch
 from torch import nn as nn
 from torch import optim as optim
+from torch.utils.data import DataLoader
 
 from loguru import logger
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from dataset.data_loader import ImageDataset
+from datasets import get_dataset
 from models import get_model
 from training.loss_functions import DepthLoss, RepMonoUnsupervisedLoss
 from training.metrics import AverageMeter, Result, plot_metrics
@@ -45,16 +46,20 @@ class Trainer:
         self.local_epoch = 0
         self.batch_size = batch_size
 
-        self.training_dataset = ImageDataset(training_dataset_path, model_name,
-                                             False)
-        self.train_loader = self.training_dataset.get_dataloader(
-            batch_size=self.batch_size)
+        self.training_dataset = get_dataset(model_name, training_dataset_path,
+                                            False)
+        self.train_loader = Dataloader(self.training_dataset,
+                                       self.batch_size,
+                                       shuffle=False,
+                                       drop_last=True)
         logger.info("Created training dataset and dataloader")
 
         if val_dataset_path:
-            self.val_dataset = ImageDataset(val_dataset_path, model_name, True)
-            self.val_loader = self.val_dataset.get_dataloader(
-                batch_size=self.batch_size)
+            self.val_dataset = get_dataset(model_name, val_dataset_path, True)
+            self.val_loader = Dataloader(self.val_dataset,
+                                         self.batch_size,
+                                         shuffle=False,
+                                         drop_last=True)
         logger.info("Created validation dataset and dataloader")
 
         self.metrics = {
@@ -90,7 +95,7 @@ class Trainer:
 
         # Unsupervised learning
         for batch_idx, batch in enumerate(tqdm(self.train_loader)):
-            images = batch["image"].to(self.device)
+            images = batch.to(self.device)
             self.optimizer.zero_grad()
 
             depth_predictions = self.model(images)
@@ -197,8 +202,8 @@ class Trainer:
 
     # TODO: Need to fix this for continous streams. Maybe we won't save the images?
     def update_dataset(self, training_dataset_path: str):
-        self.training_dataset = ImageDataset(training_dataset_path,
-                                             self.model_name, False)
+        self.training_dataset = NYUDataset(training_dataset_path,
+                                           self.model_name, False)
         self.train_loader = self.training_dataset.get_dataloader(
             batch_size=self.batch_size)
         logger.info("Created training dataset and dataloader")

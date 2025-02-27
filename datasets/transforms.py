@@ -30,7 +30,7 @@ class Transforms:
                     ToTensor(test=False, maxDepth=10.0)
                 ])
 
-        elif model_name.lower() == "repmono":
+        elif model_name.lower() == "repmono-s":
             if val:
                 return transforms.Compose([
                     transforms.ToTensor(
@@ -48,6 +48,8 @@ class Transforms:
                     transforms.Lambda(
                         lambda x: x.unsqueeze(0))  # Add batch dimension
                 ])
+        elif model_name.lower() == "repmono-u":
+            return None
         else:
             raise ValueError(f"Unknown model: {model_name}.")
 
@@ -73,8 +75,8 @@ class RandomHorizontalFlip(object):
                 type(depth)))
 
         if random.random() < 0.5:
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-            depth = depth.transpose(Image.FLIP_LEFT_RIGHT)
+            image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            depth = depth.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 
         return {'image': image, 'depth': depth}
 
@@ -92,8 +94,8 @@ class RandomVerticalFlip(object):
                 type(depth)))
 
         if random.random() < 0.5:
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            depth = depth.transpose(Image.FLIP_TOP_BOTTOM)
+            image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            depth = depth.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
         return {'image': image, 'depth': depth}
 
@@ -139,11 +141,11 @@ class ToTensor(object):
             """
             image = np.array(image).astype(np.float32) / 255.0
             depth = np.array(depth).astype(
-                np.float32)  #/ self.maxDepth #Why / maxDepth?
+                np.float32) * 0.001  #/ self.maxDepth #Why / maxDepth?
             image, depth = transformation(image), transformation(depth)
         else:
             #Fix for PLI=8.3.0
-            image = np.array(image).astype(np.float32) / 255.0
+            image = np.array(image).astype(np.float32) / 255.0 * 10.0
             depth = np.array(depth).astype(np.float32)
 
             #For train use DepthNorm
