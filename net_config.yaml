@@ -1,5 +1,4 @@
 devices:
-  "client": "100.93.98.75"
-  "client2": "100.93.98.75"
-  "server": "100.83.230.80"
+  "client": "greenhouse.ece.utexas.edu"
+  "server": "johnson.ece.utexas.edu"
 server: "server"

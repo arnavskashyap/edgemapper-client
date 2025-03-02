@@ -14,5 +14,6 @@ logger.debug(f"Using device name {device}")
 client = FLClient(device_name=device,
                   model_name=model_name,
                   training_data_path=training_data_path,
-                  val_data_path=val_data_path)
+                  val_data_path=val_data_path,
+                  model_params={"in_channels":3, "height":480, "width":640})
 client.run()

@@ -48,7 +48,7 @@ class Trainer:
 
         self.training_dataset = get_dataset(model_name, training_dataset_path,
                                             False)
-        self.train_loader = Dataloader(self.training_dataset,
+        self.train_loader = DataLoader(self.training_dataset,
                                        self.batch_size,
                                        shuffle=False,
                                        drop_last=True)
@@ -56,7 +56,7 @@ class Trainer:
 
         if val_dataset_path:
             self.val_dataset = get_dataset(model_name, val_dataset_path, True)
-            self.val_loader = Dataloader(self.val_dataset,
+            self.val_loader = DataLoader(self.val_dataset,
                                          self.batch_size,
                                          shuffle=False,
                                          drop_last=True)

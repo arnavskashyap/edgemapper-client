@@ -65,6 +65,9 @@ class ZMQ_Pair(BaseNetwork):
                 f"Setting up sending socket to talk to {recv_device} on port {port}, bound to me."  # noqa: E501
             )
 
+            print(f"listen to port {port} for traffic from device number {recv_device_number}")
+
+
             socket.bind(f"tcp://*:{port}")
             self.send_sockets[recv_device_number] = socket
 
@@ -75,6 +78,7 @@ class ZMQ_Pair(BaseNetwork):
             socket = context.socket(zmq.PAIR)
             port = self.ports[send_device_number][self.number]
             socket.connect(f"tcp://{send_dns_name}:{port}")
+            print(f"send data to port {port} for traffic to {send_dns_name}")
             self.recv_sockets[send_device_number] = socket
 
             self.recv_socket_mapping[socket] = send_device

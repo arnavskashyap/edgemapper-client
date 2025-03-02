@@ -55,7 +55,8 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         Initializes the RepMonoModel with a ResNet-like backbone and a transposed convolution decoder.
         """
         super(RepMonoUnsupervisedModel, self).__init__()
-
+        # print(height)
+        # print(width)
         self.height = height
         self.width = width
 
@@ -75,15 +76,15 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         self.backproject_depth = {}
         self.project_3d = {}
         for scale in self.scales:
-            h = self.opt.height // (2**scale)
-            w = self.opt.width // (2**scale)
+            h = 480 // (2**scale)   #HARDCODE
+            w = 640 // (2**scale)   #HARDCODE
 
             self.backproject_depth[scale] = BackprojectDepth(
-                self.opt.batch_size, h, w)
-            self.backproject_depth[scale].to(self.device)
+                8, h, w)    #HARDCODE
+            self.backproject_depth[scale].to("cuda")
 
-            self.project_3d[scale] = Project3D(self.opt.batch_size, h, w)
-            self.project_3d[scale].to(self.device)
+            self.project_3d[scale] = Project3D(8, h, w) #HARDCODE
+            self.project_3d[scale].to("cuda")
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -107,10 +108,10 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         # separate forward pass through the pose network.
 
         # select what features the pose network takes as input
-        frame_ids = [0, -1, 1]
-        pose_features = {f_i: inputs["image_aug", f_i, 0] for f_i in frame_ids}
+        self.frame_ids = [0, -1, 1]
+        pose_features = {f_i: inputs["image_aug", f_i, 0] for f_i in self.frame_ids}
 
-        for f_i in frame_ids[1:]:
+        for f_i in self.frame_ids[1:]:
             # To maintain ordering we always pass frames in temporal order
             if f_i < 0:
                 pose_inputs = [pose_features[f_i], pose_features[0]]
@@ -141,12 +142,12 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
                                  align_corners=False)
             source_scale = 0
 
-            _, depth = disp_to_depth(disp, self.opt.min_depth,
-                                     self.opt.max_depth)
+            _, depth = disp_to_depth(disp, 0.1, #HARDCODE
+                                     100)   #HARDCODE
 
             outputs[("depth", 0, scale)] = depth
 
-            for i, frame_id in enumerate(self.opt.frame_ids[1:]):
+            for i, frame_id in enumerate(self.frame_ids[1:]):
 
                 t = outputs[("cam_T_cam", 0, frame_id)]
 

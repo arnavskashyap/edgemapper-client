@@ -13,19 +13,16 @@ from datasets.nyu_dataset import NYUDataset
 
 
 class RepMonoUnsupervisedDataset(NYUDataset):
+    def __init__(self, *args, **kwargs):
+        # Extract named arguments from kwargs, with default values
+        self.height = kwargs.pop("height", 480)
+        self.width = kwargs.pop("width", 640)
+        self.frame_idxs = kwargs.pop("frame_idxs", [0, -1, 1])
+        self.num_scales = kwargs.pop("num_scales", 4)
 
-    def __init__(self,
-                 height: int = 480,
-                 width: int = 640,
-                 frame_idxs: List[int] = [0, -1, 1],
-                 num_scales: int = 4,
-                 *args,
-                 **kwargs):
-        super(NYUDataset, self).__init__()
-        self.height = height
-        self.width = width
-        self.frame_idxs = frame_idxs
-        self.num_scales = num_scales
+        # Pass remaining args and kwargs to the parent class
+        super(NYUDataset, self).__init__(**kwargs)
+
         self.K = np.array(
             [[0.58, 0, 0.5, 0], [0, 1.92, 0.5, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
             dtype=np.float32)
