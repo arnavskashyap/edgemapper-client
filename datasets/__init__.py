@@ -7,7 +7,9 @@ from datasets.transforms import Transforms
 SUPPORTED_MODEL_DATASETS = {
     "guidedepth": GuideDepthDataset,
     "repmono-u": RepMonoUnsupervisedDataset,
-    "repmono-s": NYUDataset
+    "repmono-s": NYUDataset,
+    "hybrid": RepMonoUnsupervisedDataset,
+    "guidedepth-t": GuideDepthDataset
 }
 
 

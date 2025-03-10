@@ -358,7 +358,7 @@ def DualResNet_Backbone(pretrained=False, features=64):
     model = DualResNet(BasicBlock, [2, 2, 2, 2], out_features=features,
                        planes=32, spp_planes=128, head_planes=64, augment=False)
     if pretrained:
-        checkpoint = torch.load('./model/weights/' + "DDRNet23s_imagenet.pth",
+        checkpoint = torch.load('./models/guidedepth/' + "DDRNet23s_imagenet.pth",
                                 map_location='cpu')
         # checkpoint = torch.load('GuidedDecoding\model\weights\DDRNet23s_imagenet.pth',
         #                         map_location='cpu')

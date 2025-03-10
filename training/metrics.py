@@ -33,14 +33,12 @@ def plot_metrics(metrics: Dict[str, List[float]], results_dir: str):
         os.makedirs(parent_save_path)
 
     for metric in [
-            "RMSE", "MAE", "Delta1", "Delta2", "Delta3", "REL", "Lg10",
-            "Training Loss"
-    ]:
+            "RMSE", "MAE", "Delta1", "Delta2", "Delta3", "REL", "Lg10"]:
         plt.figure()
         plt.plot(metrics[metric])
         plt.title(f"{metric}")
         plt.grid(True)
-        plt.xlabel("Local epoch")
+        plt.xlabel("Global epoch")
         plt.ylabel(f"{metric}")
         plt.savefig(os.path.join(parent_save_path, f"{metric}.pdf"))
 

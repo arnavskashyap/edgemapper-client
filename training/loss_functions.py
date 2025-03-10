@@ -9,7 +9,8 @@ from math import exp
 class RepMonoUnsupervisedLoss():
 
     def __init__(self):
-        self.scales = [0, 1, 2]
+        # self.scales = [0, 1, 2]
+        self.scales = [0]
         self.ssim = SSIM()
 
     def compute_reprojection_loss(self, pred, target):
@@ -39,11 +40,11 @@ class RepMonoUnsupervisedLoss():
             source_scale = 0
 
             disp = outputs[("disp", scale)]
-            color = inputs[("color", 0, scale)]
-            target = inputs[("color", 0, source_scale)]
+            image = inputs[("image", 0, scale)]
+            target = inputs[("image", 0, source_scale)]
 
             for frame_id in frame_ids[1:]:
-                pred = outputs[("color", frame_id, scale)]
+                pred = outputs[("image", frame_id, scale)]
                 reprojection_losses.append(
                     self.compute_reprojection_loss(pred, target))
 
@@ -51,19 +52,22 @@ class RepMonoUnsupervisedLoss():
 
             identity_reprojection_losses = []
             for frame_id in frame_ids[1:]:
-                pred = inputs[("color", frame_id, source_scale)]
+                pred = inputs[("image", frame_id, source_scale)]
                 identity_reprojection_losses.append(
                     self.compute_reprojection_loss(pred, target))
 
             identity_reprojection_losses = torch.cat(
                 identity_reprojection_losses, 1)
+            
+            identity_reprojection_loss = identity_reprojection_losses
+            reprojection_loss = reprojection_losses
 
             # add random numbers to break ties
             identity_reprojection_loss += torch.randn(
-                identity_reprojection_loss.shape) * 0.00001
+                identity_reprojection_loss.shape).to('cuda') * 0.00001
 
             combined = torch.cat(
-                (identity_reprojection_losses, reprojection_losses), dim=1)
+                (identity_reprojection_loss, reprojection_loss), dim=1)
 
             if combined.shape[1] == 1:
                 to_optimise = combined
@@ -77,7 +81,7 @@ class RepMonoUnsupervisedLoss():
 
             mean_disp = disp.mean(2, True).mean(3, True)
             norm_disp = disp / (mean_disp + 1e-7)
-            smooth_loss = get_smooth_loss(norm_disp, color)
+            smooth_loss = get_smooth_loss(norm_disp, image)
 
             loss += 1e-3 * smooth_loss / (2**scale)
             total_loss += loss

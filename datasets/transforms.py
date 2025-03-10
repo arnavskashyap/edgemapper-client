@@ -17,7 +17,7 @@ class Transforms:
         """
         Returns the appropriate transformations based on the model name.
         """
-        if model_name.lower() == "guidedepth":
+        if model_name.lower() == "guidedepth" or model_name.lower() == "guidedepth-t" or model_name.lower() == "hybrid":
             if val:
                 return transforms.Compose(
                     [Resize((480, 640)),

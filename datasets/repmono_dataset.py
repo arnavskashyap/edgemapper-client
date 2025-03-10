@@ -13,15 +13,19 @@ from datasets.nyu_dataset import NYUDataset
 
 
 class RepMonoUnsupervisedDataset(NYUDataset):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, dataset_path, val, transform, *args, **kwargs):
         # Extract named arguments from kwargs, with default values
         self.height = kwargs.pop("height", 480)
         self.width = kwargs.pop("width", 640)
         self.frame_idxs = kwargs.pop("frame_idxs", [0, -1, 1])
         self.num_scales = kwargs.pop("num_scales", 4)
 
+        # dataset_path = kwargs.pop("dataset_path")
+        # val = kwargs.pop("val")
+        # transform = kwargs.pop("transform")
+
         # Pass remaining args and kwargs to the parent class
-        super(NYUDataset, self).__init__(**kwargs)
+        super(RepMonoUnsupervisedDataset, self).__init__(dataset_path, val, transform)
 
         self.K = np.array(
             [[0.58, 0, 0.5, 0], [0, 1.92, 0.5, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
@@ -56,17 +60,20 @@ class RepMonoUnsupervisedDataset(NYUDataset):
         """
         for k in list(inputs):
             frame = inputs[k]
-            if "color" in k:
+            if "image" in k:
                 n, im, i = k
                 for i in range(self.num_scales):
                     inputs[(n, im, i)] = self.resize[i](inputs[(n, im, i - 1)])
 
         for k in list(inputs):
             f = inputs[k]
-            if "color" in k:
+            if "image" in k:
                 n, im, i = k
-                inputs[(n, im, i)] = transforms.ToTensor(f)
-                inputs[(n + "_aug", im, i)] = transforms.ToTensor(color_aug(f))
+                to_tensor = transforms.ToTensor()
+                inputs[(n, im, i)] = to_tensor(f)
+                
+                result = color_aug(f)
+                inputs[(n + "_aug", im, i)] = to_tensor(result)
 
     def __getitem__(self, index):
         """Returns a single training item from the dataset as a dictionary.
@@ -97,12 +104,16 @@ class RepMonoUnsupervisedDataset(NYUDataset):
         do_flip = not (self.val) and random.random() > 0.5
 
         rgb_path, _ = self.filenames[index]
+        # logger.debug(f"rgb_path: {rgb_path}")
         frame_index = os.path.splitext(os.path.basename(rgb_path))[0]
         room_path = os.path.dirname(rgb_path)
 
         for i in self.frame_idxs:
-            new_frame_path = os.path.join(room_path, f"{frame_index + i}.jpg")
+            next_frame_id = int(frame_index) + i
+            new_frame_path = os.path.join(room_path, f"{next_frame_id}.jpg")
+            # logger.debug(f"new_frame_path: {new_frame_path}")
             new_frame = self.get_image(new_frame_path)
+            # logger.debug(f"new frame type: {new_frame_path} {new_frame}")
             if do_flip:
                 new_frame = new_frame.transpose(
                     Image.Transpose.FLIP_LEFT_RIGHT)
@@ -121,8 +132,9 @@ class RepMonoUnsupervisedDataset(NYUDataset):
             inputs[("inv_K", scale)] = torch.from_numpy(inv_K)
 
         if do_image_aug:
-            image_aug = transforms.ColorJitter.get_params(
+            params = transforms.ColorJitter.get_params(
                 self.brightness, self.contrast, self.saturation, self.hue)
+            image_aug = lambda img: transforms.functional.adjust_brightness(img, params[1])  # Apply brightness
         else:
             image_aug = (lambda x: x)
 
@@ -132,15 +144,19 @@ class RepMonoUnsupervisedDataset(NYUDataset):
             del inputs[("image", i, -1)]
             del inputs[("image_aug", i, -1)]
 
-        gt_path = os.path.join(room_path, f"{frame_index + i}.png")
+        #print(rgb_path)
+        #print(room_path)
+        #print(frame_index)
+        #print(i)
+        gt_path = os.path.join(room_path, f"{str(i)}.png")
         depth_gt = self.get_image(gt_path)
         depth_gt = np.array(depth_gt).astype(np.float32) / 256
 
         if do_flip:
             depth_gt = np.fliplr(depth_gt)
 
-        inputs["depth"] = np.expand_dims(depth, 0)
-        inputs["depth"] = torch.from_numpy(inputs["depth_gt"].astype(
+        inputs["depth"] = np.expand_dims(depth_gt, 0)
+        inputs["depth"] = torch.from_numpy(inputs["depth"].astype(
             np.float32))
 
         return inputs

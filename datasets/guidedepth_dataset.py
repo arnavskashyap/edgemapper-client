@@ -12,7 +12,7 @@ class GuideDepthDataset(NYUDataset):
         else:
             depth = depth * 0.001
 
-        sample.update("depth", depth)
+        sample.update({"depth": depth})
 
         if self.transform:
             sample = self.transform(sample)

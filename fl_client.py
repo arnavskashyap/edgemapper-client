@@ -79,7 +79,7 @@ class FLClient:
     def run(self):
         while True:
             logger.info(f"Staring global round: {self.global_epoch}")
-            self._download_model()
+            # self._download_model()
 
             self.trainer.train(self.max_local_epochs)
             self.trainer.validate()

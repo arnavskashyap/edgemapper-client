@@ -1,11 +1,13 @@
 from torch import nn as nn
 from models.guide_depth import GuideDepthModel
 from models.repmono_depth import RepMonoSupervisedModel, RepMonoUnsupervisedModel
+from models.hybrid import HybridModel
 
 SUPPORTED_MODELS = {
     "guidedepth": GuideDepthModel,
     "repmono-u": RepMonoUnsupervisedModel,
-    "repmono-s": RepMonoSupervisedModel
+    "repmono-s": RepMonoSupervisedModel,
+    "hybrid": HybridModel
 }
 
 

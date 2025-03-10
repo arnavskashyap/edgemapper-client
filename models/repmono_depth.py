@@ -55,10 +55,10 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         Initializes the RepMonoModel with a ResNet-like backbone and a transposed convolution decoder.
         """
         super(RepMonoUnsupervisedModel, self).__init__()
-        # print(height)
-        # print(width)
+        self.batch_size = 4
         self.height = height
         self.width = width
+        self.scales = [0, 1, 2]
 
         self.encoder = RepMonoEncoder(in_channels=in_channels,
                                       height=height,
@@ -66,13 +66,12 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
                                       depth_scale=depth_scale)
         # PUT USE SKIPS TO FALSE because shit was crashing otherwise
         self.decoder = DepthDecoder(num_ch_enc=self.encoder.num_ch_enc,
-                                    use_skips=False)
+                                    use_skips=False, scales=self.scales)
         self.pose_encoder = ResnetEncoder(18, "pretrained", 2)
-        self.pose_decoder = PoseDecoder(num_ch_enc=self.encoder.num_ch_enc,
+        self.pose_decoder = PoseDecoder(num_ch_enc=self.pose_encoder.num_ch_enc,
                                         num_input_features=1,
                                         num_frames_to_predict_for=2)
 
-        self.scales = [0, 1, 2]
         self.backproject_depth = {}
         self.project_3d = {}
         for scale in self.scales:
@@ -80,10 +79,10 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
             w = 640 // (2**scale)   #HARDCODE
 
             self.backproject_depth[scale] = BackprojectDepth(
-                8, h, w)    #HARDCODE
+                self.batch_size, h, w)    #HARDCODE
             self.backproject_depth[scale].to("cuda")
 
-            self.project_3d[scale] = Project3D(8, h, w) #HARDCODE
+            self.project_3d[scale] = Project3D(self.batch_size, h, w) #HARDCODE
             self.project_3d[scale].to("cuda")
 
     def forward(self, x: Tensor) -> Tensor:
@@ -96,6 +95,7 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         Returns:
             Tensor: Predicted depth map tensor of shape (B, 1, H, W).
         """
+        print(x.keys())
         features = self.encoder(x["image", 0, 0])
         depth_outputs = self.decoder(features)
         depth_outputs.update(self._predict_poses(x))
@@ -142,8 +142,8 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
                                  align_corners=False)
             source_scale = 0
 
-            _, depth = disp_to_depth(disp, 0.1, #HARDCODE
-                                     100)   #HARDCODE
+            _, depth = disp_to_depth(disp, 0.001, #HARDCODE
+                                     1.0)   #HARDCODE
 
             outputs[("depth", 0, scale)] = depth
 
@@ -158,11 +158,11 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
 
                 outputs[("sample", frame_id, scale)] = pix_coords
 
-                outputs[("color", frame_id, scale)] = F.grid_sample(
-                    inputs[("color", frame_id, source_scale)],
+                outputs[("image", frame_id, scale)] = F.grid_sample(
+                    inputs[("image", frame_id, source_scale)],
                     outputs[("sample", frame_id, scale)],
                     padding_mode="border",
                     align_corners=True)
 
-                outputs[("color_identity", frame_id,
-                         scale)] = inputs[("color", frame_id, source_scale)]
+                outputs[("image_identity", frame_id,
+                         scale)] = inputs[("image", frame_id, source_scale)]
