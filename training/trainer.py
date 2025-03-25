@@ -200,6 +200,7 @@ class Trainer:
         return self.metrics
 
     def plot_val(self):
+        """Plot validation results"""
         with torch.no_grad():
             for batch_idx, batch in enumerate(tqdm(self.val_loader)):                
                 t0 = time.time()
@@ -236,6 +237,9 @@ class Trainer:
                 axes[2].axis("off")
 
                 save_path = os.path.join("./results", f"depth_comparison_{t0}.png")
+                directory = os.path.dirname(save_path)
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
                 plt.savefig(save_path, bbox_inches="tight", dpi=300)
                 plt.close(fig)  # Close the figure to free memory
                 break  # Show only the first batch

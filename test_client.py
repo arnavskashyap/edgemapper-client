@@ -18,8 +18,8 @@ device = torch.device(
     'cuda:0' if torch.cuda.is_available() else 'cpu')
 model = get_model(model_name, **model_params).to(device)
 
-training_data_paths = ["train_data/nyu_data/data/nyu2_train/dining_room_0010_out", "train_data/nyu_data/data/nyu2_train/basement_0001b_out", "train_data/nyu_data/data/nyu2_train/classroom_0004_out", "train_data/nyu_data/data/nyu2_train/basement_0001a_out"]
-val_data_path = "/home/student/edgemapper-client/train_data/nyu_data/data/nyu2_train/basement_0001a_out"
+training_data_paths = ["B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\bathroom_0057_out"]
+val_data_path = "B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\bathroom_0057_out"
 
 trainer = Trainer(
     model,

@@ -44,7 +44,7 @@ class RepMonoUnsupervisedDataset(NYUDataset):
             self.saturation = 0.2
             self.hue = 0.1
 
-        self.interp = Image.Resampling.LANCZOS
+        self.interp = Image.LANCZOS
         self.resize = {}
         for i in range(self.num_scales):
             s = 2**i
@@ -116,7 +116,7 @@ class RepMonoUnsupervisedDataset(NYUDataset):
             # logger.debug(f"new frame type: {new_frame_path} {new_frame}")
             if do_flip:
                 new_frame = new_frame.transpose(
-                    Image.Transpose.FLIP_LEFT_RIGHT)
+                    Image.FLIP_LEFT_RIGHT)
             inputs[("image", i, -1)] = new_frame
 
         # adjusting intrinsics to match each scale in the pyramid
@@ -134,7 +134,7 @@ class RepMonoUnsupervisedDataset(NYUDataset):
         if do_image_aug:
             params = transforms.ColorJitter.get_params(
                 self.brightness, self.contrast, self.saturation, self.hue)
-            image_aug = lambda img: transforms.functional.adjust_brightness(img, params[1])  # Apply brightness
+            image_aug = lambda img: transforms.functional.adjust_brightness(img, self.brightness[1])  # Apply brightness
         else:
             image_aug = (lambda x: x)
 

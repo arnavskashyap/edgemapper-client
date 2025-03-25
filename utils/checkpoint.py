@@ -19,6 +19,9 @@ def save_checkpoint(epoch: int, model: nn.Module,
         checkpoint_dir (str, optional): Directory to save checkpoint. Defaults to "latest.pth".
     """
     checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_{epoch}.pth")
+    directory = os.path.dirname(checkpoint_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     checkpoint = {
         "epoch": epoch,
         "model": model.state_dict(),
