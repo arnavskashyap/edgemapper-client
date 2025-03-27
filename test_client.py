@@ -34,7 +34,7 @@ logger.info(f"Initialized trainer on {device}")
 
 global_epoch = 0
 local_epoch = 0
-max_local_epochs = 8
+max_local_epochs = 4
 
 
 global_metrics = {}
@@ -45,4 +45,7 @@ for idx, training_path in enumerate(training_data_paths):
     # global_metrics.update({idx, local_metrics})
     trainer.update_dataset(training_path)
 trainer.plot_results()
+print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated(0)/1024/1024/1024))
+print("torch.cuda.memory_reserved: %fGB"%(torch.cuda.memory_reserved(0)/1024/1024/1024))
+print("torch.cuda.max_memory_reserved: %fGB"%(torch.cuda.max_memory_reserved(0)/1024/1024/1024))
 # plot_metrics(global_metrics, "./results")

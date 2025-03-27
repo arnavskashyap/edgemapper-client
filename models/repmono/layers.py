@@ -61,7 +61,7 @@ def rot_from_axisangle(vec):
     (adapted from https://github.com/Wallacoloo/printipi)
     Input 'vec' has to be Bx1x3
     """
-    angle = torch.norm(vec, 2, 2, True)
+    angle = torch.norm(vec, p=2, dim=-1, keepdim=True)
     axis = vec / (angle + 1e-7)
 
     ca = torch.cos(angle)

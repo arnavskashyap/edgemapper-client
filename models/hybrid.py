@@ -10,7 +10,8 @@ from models.hybrid_guidedepth import HybridGuideDepthModel
 from models.repmono.resnet_encoder import ResnetEncoder
 from models.repmono.pose_decoder import PoseDecoder
 from models.repmono.layers import BackprojectDepth, Project3D, disp_to_depth, transformation_from_parameters
-
+from models.rapidnet.rapidnet_encoder import RapidNetEncoder
+from models.rapidnet.rapidnet_decoder import RapidNetDecoder
 
 class HybridModel(BaseDepthModel):
     """
@@ -27,11 +28,29 @@ class HybridModel(BaseDepthModel):
         self.width = width
         self.scales = [0]
 
+        # Configuration for ultra memory-efficient encoder and decoder
+        blocks = [[1,0], [1,0], [2,1], [1,1]]  # Drastically reduced blocks
+        channels = [16, 32, 64, 128]  # Significantly reduced channels
+
         self.depth_model = HybridGuideDepthModel()
-        self.pose_encoder = ResnetEncoder(18, "pretrained", 2)
-        self.pose_decoder = PoseDecoder(num_ch_enc=self.pose_encoder.num_ch_enc,
-                                        num_input_features=1,
-                                        num_frames_to_predict_for=2)
+        self.pose_encoder = RapidNetEncoder(
+            input_channels=6,  
+            blocks=blocks,
+            channels=channels,
+            drop_path=0.1
+        )
+        
+        self.pose_decoder = RapidNetDecoder(
+            in_channels=channels[-1],  
+            emb_dims=256,  # Reduced embedding dimensions
+            dropout=0.,
+            num_classes=1000,  
+            distillation=True
+        )
+        # self.pose_encoder = ResnetEncoder(18, "pretrained", 2)
+        # self.pose_decoder = PoseDecoder(num_ch_enc=self.pose_encoder.num_ch_enc,
+        #                                 num_input_features=1,
+        #                                 num_frames_to_predict_for=2)
 
         self.backproject_depth = {}
         self.project_3d = {}
@@ -77,9 +96,12 @@ class HybridModel(BaseDepthModel):
             else:
                 pose_inputs = [pose_features[0], pose_features[f_i]]
 
-            pose_inputs = [self.pose_encoder(torch.cat(pose_inputs, 1))]
+            # Get encoder features - don't wrap in a list
+            encoded_features = self.pose_encoder(torch.cat(pose_inputs, 1))
 
-            axisangle, translation = self.pose_decoder(pose_inputs)
+            # Pass tensor directly to decoder
+            axisangle, translation = self.pose_decoder(encoded_features)
+            
             outputs[("axisangle", 0, f_i)] = axisangle
             outputs[("translation", 0, f_i)] = translation
 
