@@ -13,13 +13,17 @@ from PEERNet_fl.peernet.networks import ZMQ_Pair
 
 # Initialize Model
 model_name = "hybrid"
-model_params = {"in_channels":3, "height":480, "width":640}
+model_params = {
+    "in_channels": 3, 
+    "height": 240,  # Reduced from 480 for memory efficiency
+    "width": 320,   # Reduced from 640 for memory efficiency
+}
 device = torch.device(
     'cuda:0' if torch.cuda.is_available() else 'cpu')
 model = get_model(model_name, **model_params).to(device)
 
-training_data_paths = ["B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\bathroom_0057_out"]
-val_data_path = "B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\bathroom_0057_out"
+training_data_paths = ["B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\captured_images"]
+val_data_path = "B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\captured_images"
 
 trainer = Trainer(
     model,
