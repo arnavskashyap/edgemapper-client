@@ -103,10 +103,45 @@ class DepthLoss():
 
     def __call__(self, output, depth):
         if self.beta == 0 and self.gamma == 0:
+            # Ensure tensors have the same shape before masking
+            if output.shape != depth.shape:
+                # Handle case where depth has more than 2 dimensions (h, w, channels)
+                if len(depth.shape) > 2:
+                    # If depth is 3D with RGB channels, convert to grayscale first
+                    if depth.shape[-1] == 3:
+                        depth = depth.mean(dim=-1)  # Average RGB channels
+                    
+                    # Get height and width dimensions only
+                    h, w = depth.shape[:2]
+                else:
+                    # For 2D depth tensors
+                    h, w = depth.shape
+                
+                output = F.interpolate(
+                    output.unsqueeze(0).unsqueeze(0),
+                    size=(h, w),
+                    mode='bilinear',
+                    align_corners=False
+                ).squeeze()
+            
+            # Create a mask for valid depth values
             valid_mask = depth > 0.0
-            output = output[valid_mask]
-            depth = depth[valid_mask]
-            l_depth = self.L1_Loss(output, depth)
+            
+            # If depth is 3D but output is 2D, make valid_mask 2D as well
+            if len(depth.shape) > len(output.shape):
+                valid_mask = valid_mask.any(dim=-1)
+            
+            # Use masked_select instead of indexing for more robustness
+            output_masked = torch.masked_select(output, valid_mask)
+            
+            # Ensure depth has same dimensionality as output for masking
+            if len(depth.shape) > len(output.shape):
+                depth_2d = depth.mean(dim=-1) if depth.shape[-1] == 3 else depth[..., 0]
+                depth_masked = torch.masked_select(depth_2d, valid_mask)
+            else:
+                depth_masked = torch.masked_select(depth, valid_mask)
+            
+            l_depth = self.L1_Loss(output_masked, depth_masked)
             loss = l_depth
         else:
             l_depth = self.L1_Loss(output, depth)

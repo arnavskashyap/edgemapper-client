@@ -5,6 +5,7 @@ import torch
 from torch import nn as nn
 from torch import optim as optim
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
 from loguru import logger
 from matplotlib import pyplot as plt
@@ -161,8 +162,51 @@ class Trainer:
 
                 # Compute L1 loss
                 loss_func = DepthLoss(1, 0, 0, 10.0)
-                pred_depth = pred_depths[("disp", 0)][0, 0]  # Convert to (H, W)
-                gt_depth = gt_depths[0, 0]  # Convert to (H, W)
+                
+                # Extract depth tensors and ensure they're in the expected format
+                # Start with debug info
+                print(f"pred_depths keys: {pred_depths.keys()}")
+                print(f"pred_depths[('disp', 0)] shape: {pred_depths[('disp', 0)].shape}")
+                print(f"gt_depths shape: {gt_depths.shape}")
+                
+                # Extract and ensure proper dimensions
+                pred_depth = pred_depths[("disp", 0)]
+                # Make sure pred_depth is 2D by removing any extra dimensions
+                if len(pred_depth.shape) > 2:
+                    pred_depth = pred_depth[0, 0]  # Convert to (H, W)
+                
+                # Handle gt_depth dimensions
+                gt_depth = gt_depths
+                # Make sure gt_depth is 2D by removing any extra dimensions
+                if len(gt_depth.shape) > 2:
+                    gt_depth = gt_depth[0, 0]  # Convert to (H, W)
+                
+                print(f"After extraction - pred_depth shape: {pred_depth.shape}")
+                print(f"After extraction - gt_depth shape: {gt_depth.shape}")
+                
+                # Ensure tensors have the same shape before normalization and loss computation
+                if pred_depth.shape != gt_depth.shape:
+                    print(f"Shape mismatch! Resizing pred_depth {pred_depth.shape} to match gt_depth {gt_depth.shape}")
+                    
+                    # Convert tensors to be compatible with F.interpolate which requires 4D input
+                    pred_depth_4d = pred_depth.view(1, 1, *pred_depth.shape)
+                    
+                    # Get target dimensions - handling various dimension possibilities
+                    target_size = (gt_depth.shape[-2], gt_depth.shape[-1])
+                    print(f"Target resize dimensions: {target_size}")
+                    
+                    # Resize to match ground truth dimensions
+                    pred_depth_4d = F.interpolate(
+                        pred_depth_4d,
+                        size=target_size,  # Use the last two dimensions
+                        mode='bilinear',
+                        align_corners=False
+                    )
+                    
+                    # Convert back to match gt_depth dimensions
+                    pred_depth = pred_depth_4d.squeeze()
+                    print(f"After resize - pred_depth shape: {pred_depth.shape}")
+                
                 pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() - pred_depth.min())
                 gt_depth = (gt_depth - gt_depth.min()) / (gt_depth.max() - gt_depth.min())
                 loss = loss_func(pred_depth, gt_depth)
