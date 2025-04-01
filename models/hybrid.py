@@ -61,8 +61,8 @@ class HybridModel(BaseDepthModel):
         self._generate_images_pred(x, depth_outputs)
         
             # Visualize depth predictions for debugging
-        if not self.training:
-            self._visualize_depth_predictions(x, depth_outputs)
+#         if not self.training:
+#             self._visualize_depth_predictions(x, depth_outputs)
     
 
         return depth_outputs

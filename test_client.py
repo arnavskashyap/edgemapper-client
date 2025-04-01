@@ -20,8 +20,8 @@ device = torch.device(
     'cuda:0' if torch.cuda.is_available() else 'cpu')
 model = get_model(model_name, **model_params).to(device)
 
-training_data_paths = ["B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\captured_images"]
-val_data_path = "B:\\andre\\Documents\\Fall 2024 Classes\\Senior_Design\\edgemapper-client\\captured_images"
+training_data_paths = ["captured_images"]
+val_data_path = "captured_images"
 
 trainer = Trainer(
     model,

@@ -22,6 +22,7 @@ class NYUDataset(Dataset):
     def _load_images(self, room_path):
         """Recursively search for matching RGB and depth images inside rooms."""
         images = []
+        
         if os.path.isdir(room_path):
             rgb_images = sorted(
                 [f for f in os.listdir(room_path) if f.endswith(".jpg")])

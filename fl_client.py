@@ -6,9 +6,9 @@ from loguru import logger
 
 from training.trainer import Trainer
 from models import get_model
-
+from jetbot_code.bot import Bot
 from PEERNet_fl.peernet.networks import ZMQ_Pair
-
+from jetbot import Camera
 
 class FLClient:
     """
@@ -27,7 +27,7 @@ class FLClient:
                  training_data_path: str,
                  val_data_path: Optional[str],
                  batch_size: int = 4,
-                 local_epochs: int = 15,
+                 local_epochs: int = 4,
                  lr: float = 1e-4,
                  model_params=None,
                  loss_func=None):
@@ -37,12 +37,15 @@ class FLClient:
         self.net_config = omegaconf.OmegaConf.load("net_config.yaml")
         self.network = ZMQ_Pair(device_name=device_name, **self.net_config)
         logger.info("Connected to server")
-
+        self.training_data_path = training_data_path
         # Initialize Model
         self.device = torch.device(
             'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model = get_model(model_name, **model_params).to(self.device)
-
+        self.bot = Bot()
+        self.camera = Camera.instance(width=320, height=240)
+        self.direction = 1 #1 = right, flip every iteration
+        
         self.trainer = Trainer(
             self.model,
             model_name,
@@ -75,15 +78,44 @@ class FLClient:
         cpu_state_dict = {k: v.cpu() for k, v in gradients.items()}
         self.network.send("server", cpu_state_dict)
         logger.info("Successfully sent gradients to server.")
-
+    
+    def _capture_new_images(self):
+        """
+        Capture new images using the Mover class if available.
+        """
+        if self.bot:
+            logger.info("Capturing new images using Mover...")
+            self.bot._capture_images(self.training_data_path, self.camera, self.direction)
+            logger.info("New images captured and saved.")
+    
+    def _collect_and_move(self):
+        """
+        Collect data dnd move
+        """
+        while True:
+            # collect image
+            # if statement that checks the depth of a new image
+            # move based off of it
+            logger.info("collecting and moving")
+            
     def run(self):
         while True:
-            logger.info(f"Staring global round: {self.global_epoch}")
-            # self._download_model()
+            self.direction = !self.direction
+#             logger.info(f"Staring global round: {self.global_epoch}")
+#             # self._download_model()
 
+#             self.trainer.train(self.max_local_epochs)
+#             self.trainer.validate()
+#             self.trainer.plot_results()
+#             self._upload_gradients()
+#             # TODO: Update dataset with new images/delete old ones. I'm assuming there will be some new path to new images we can know.
+#             self.trainer.update_dataset("path to new images")
+            logger.info(f"Staring global round: {self.global_epoch}")
+            self._download_model()
+            self._capture_new_images()
             self.trainer.train(self.max_local_epochs)
             self.trainer.validate()
             self.trainer.plot_results()
             self._upload_gradients()
             # TODO: Update dataset with new images/delete old ones. I'm assuming there will be some new path to new images we can know.
-            self.trainer.update_dataset("path to new images")
+#             self.trainer.update_dataset(self.training_data_path)
