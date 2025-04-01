@@ -148,7 +148,7 @@ class RepMonoUnsupervisedDataset(NYUDataset):
         #print(room_path)
         #print(frame_index)
         #print(i)
-        gt_path = os.path.join(room_path, f"{str(i)}.png")
+        gt_path = os.path.join(room_path, f"{frame_index}.png")
         depth_gt = self.get_image(gt_path)
         depth_gt = np.array(depth_gt).astype(np.float32) / 256
 

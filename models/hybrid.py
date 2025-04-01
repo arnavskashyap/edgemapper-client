@@ -59,7 +59,88 @@ class HybridModel(BaseDepthModel):
         depth_outputs = self.depth_model(x["image", 0, 0])
         depth_outputs.update(self._predict_poses(x))
         self._generate_images_pred(x, depth_outputs)
+        
+            # Visualize depth predictions for debugging
+        if not self.training:
+            self._visualize_depth_predictions(x, depth_outputs)
+    
+
         return depth_outputs
+
+    def _visualize_depth_predictions(self, inputs, outputs):
+        """
+        Visualize and save depth predictions and ground truth for debugging purposes.
+        
+        Args:
+            inputs: Input dictionary containing RGB images and ground truth depth
+            outputs: Output dictionary containing predicted depths
+        """
+        try:
+            import matplotlib.pyplot as plt
+            import os
+            import numpy as np
+            import time
+            
+            # Create visualization directory
+            viz_dir = os.path.join("./results", "depth_predictions")
+            os.makedirs(viz_dir, exist_ok=True)
+            
+            # Get a timestamp for unique filenames
+            timestamp = int(time.time())
+            
+            # Process first items in batch
+            for batch_idx in range(min(2, inputs["image", 0, 0].shape[0])):  # Only visualize up to 2 items from batch
+                # Get input RGB image
+                rgb_image = inputs["image", 0, 0][batch_idx].detach().cpu().permute(1, 2, 0).numpy()
+                # Normalize for visualization
+                rgb_image = (rgb_image - rgb_image.min()) / (rgb_image.max() - rgb_image.min() + 1e-8)
+                
+                # Get predicted depth
+                pred_depth = outputs[("disp", 0)][batch_idx, 0].detach().cpu().numpy()
+                # Normalize for visualization
+                pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() - pred_depth.min() + 1e-8)
+                
+                # Create figure with RGB, predicted depth, and ground truth depth side by side
+                fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+                
+                # Display RGB image
+                axes[0].imshow(rgb_image)
+                axes[0].set_title("Input RGB Image")
+                axes[0].axis("off")
+                
+                # Display predicted depth
+                depth_display = axes[1].imshow(pred_depth, cmap="plasma")
+                axes[1].set_title("Predicted Depth")
+                axes[1].axis("off")
+                
+                # Add colorbar for predicted depth
+                plt.colorbar(depth_display, ax=axes[1], shrink=0.7)
+                
+                # Display ground truth depth if available
+                if "depth" in inputs:
+                    gt_depth = inputs["depth"][batch_idx, 0].detach().cpu().numpy()
+                    # Normalize for visualization
+                    gt_depth = (gt_depth - gt_depth.min()) / (gt_depth.max() - gt_depth.min() + 1e-8)
+                    gt_display = axes[2].imshow(gt_depth, cmap="plasma")
+                    axes[2].set_title("Ground Truth Depth")
+                    axes[2].axis("off")
+                    # Add colorbar for ground truth
+                    plt.colorbar(gt_display, ax=axes[2], shrink=0.7)
+                else:
+                    axes[2].text(0.5, 0.5, "Ground Truth Not Available", 
+                                horizontalalignment='center', verticalalignment='center',
+                                transform=axes[2].transAxes)
+                    axes[2].set_title("Ground Truth Depth")
+                    axes[2].axis("off")
+                
+                # Save figure
+                plt.savefig(f"{viz_dir}/depth_comparison_{timestamp}_{batch_idx}.png", bbox_inches="tight", dpi=300)
+                plt.close(fig)
+                
+                # Print debug info
+                print(f"Saved depth comparison to {viz_dir}/depth_comparison_{timestamp}_{batch_idx}.png")
+        except Exception as e:
+            print(f"Debug visualization error: {str(e)}")
 
     def _predict_poses(self, inputs):
         outputs = {}
