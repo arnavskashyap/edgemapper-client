@@ -103,10 +103,46 @@ class DepthLoss():
 
     def __call__(self, output, depth):
         if self.beta == 0 and self.gamma == 0:
+            # Handle depth tensor dimensionality
+            if len(depth.shape) > 2:
+                # If depth has more than 2 dimensions (e.g., [240, 320, 3]), convert to 2D
+                if depth.shape[-1] == 3:  # RGB channels as last dimension
+                    depth = depth.mean(dim=-1)  # Average RGB channels
+                elif len(depth.shape) == 3 and depth.shape[0] == 1:  # If [1, H, W]
+                    depth = depth.squeeze(0)  # Remove batch dimension
+            
+            # Ensure output has same dimensionality as depth for masking
+            if output.shape != depth.shape:
+                # Handle common tensor formats
+                if len(output.shape) == 4:  # [B, C, H, W]
+                    # Take first sample, first channel
+                    output = output[0, 0]
+                elif len(output.shape) == 3:  # [C, H, W]
+                    # Take first channel
+                    output = output[0]
+                
+                # If still not matching, try to resize
+                if output.shape != depth.shape:
+                    output = F.interpolate(
+                        output.unsqueeze(0).unsqueeze(0),
+                        size=depth.shape,
+                        mode='bilinear',
+                        align_corners=False
+                    ).squeeze()
+            
+            # Create mask for valid depth values (where depth > 0)
             valid_mask = depth > 0.0
-            output = output[valid_mask]
-            depth = depth[valid_mask]
-            l_depth = self.L1_Loss(output, depth)
+            
+            # Flatten both tensors and mask for consistent indexing
+            output_flat = output.reshape(-1)
+            depth_flat = depth.reshape(-1)
+            valid_mask_flat = valid_mask.reshape(-1)
+            
+            # Apply mask to get valid depth values
+            output_masked = output_flat[valid_mask_flat]
+            depth_masked = depth_flat[valid_mask_flat]
+            
+            l_depth = self.L1_Loss(output_masked, depth_masked)
             loss = l_depth
         else:
             l_depth = self.L1_Loss(output, depth)

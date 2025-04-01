@@ -212,38 +212,75 @@ class Trainer:
                 # Forward pass
                 pred_depths = self.model(images)  
                
-                # Visualization (showing the first image in the batch)
-                image = images[("image", 0, 0)][0].cpu().permute(1, 2, 0).numpy()  # Extract first image from first batch and convert to (H, W, 3)
-                pred_depth = pred_depths[("disp", 0)][0, 0].cpu().numpy()  # Convert to (H, W)
-                # pred_depth = pred_depths[("depth", 0, 0)][0, 0].cpu()  # Convert to (H, W)
-                # depth_pred = torch.clamp(depth_pred, min=1e-3, max=100)
-                gt_depth = gt_depths[0, 0].cpu().numpy()  # Convert to (H, W)
-
-                # Normalize for visualization
-                pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() - pred_depth.min())
-                gt_depth = (gt_depth - gt_depth.min()) / (gt_depth.max() - gt_depth.min())
-
-                fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-                axes[0].imshow(image)
-                axes[0].set_title("RGB Image")
-                axes[0].axis("off")
-
-                axes[1].imshow(pred_depth, cmap="plasma")
-                axes[1].set_title("Predicted Depth")
-                axes[1].axis("off")
-
-                axes[2].imshow(gt_depth, cmap="plasma")
-                axes[2].set_title("Ground Truth Depth")
-                axes[2].axis("off")
-
+                # Create a figure with multiple rows for different frames
+                fig, axes = plt.subplots(3, 3, figsize=(15, 15))
+                
+                # Define frame indices to visualize (current=0, previous=-1, next=1)
+                frame_indices = [0, -1, 1]
+                
+                # Set row titles
+                row_titles = ["Current Frame", "Previous Frame", "Next Frame"]
+                
+                # Process each frame
+                for i, frame_idx in enumerate(frame_indices):
+                    # Get image from the specific frame (first batch item)
+                    if ("image", frame_idx, 0) in images:
+                        image = images[("image", frame_idx, 0)][0].cpu().permute(1, 2, 0).numpy()
+                        
+                        # For previous and next frames, we only have images, not depth predictions
+                        axes[i, 0].imshow(image)
+                        axes[i, 0].set_title(f"{row_titles[i]} RGB")
+                        axes[i, 0].axis("off")
+                    
+                    # Only show depth for the current frame (frame_idx=0)
+                    if i == 0:
+                        # Get predicted depth for current frame
+                        pred_depth = pred_depths[("disp", 0)][0, 0].cpu().numpy()
+                        
+                        # Get ground truth depth (first batch item)
+                        if len(gt_depths.shape) == 5 and gt_depths.shape[-1] == 3:  # Handle RGB depth
+                            gt_depth = gt_depths[0, 0].cpu().numpy().mean(axis=2)  # Average RGB channels
+                        else:
+                            gt_depth = gt_depths[0, 0].cpu().numpy()
+                        
+                        # Normalize for visualization
+                        pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() - pred_depth.min() + 1e-8)
+                        gt_depth = (gt_depth - gt_depth.min()) / (gt_depth.max() - gt_depth.min() + 1e-8)
+                        
+                        # Display predicted depth
+                        axes[i, 1].imshow(pred_depth, cmap="plasma")
+                        axes[i, 1].set_title(f"{row_titles[i]} Predicted Depth")
+                        axes[i, 1].axis("off")
+                        
+                        # Display ground truth depth
+                        axes[i, 2].imshow(gt_depth, cmap="plasma")
+                        axes[i, 2].set_title(f"{row_titles[i]} Ground Truth")
+                        axes[i, 2].axis("off")
+                    else:
+                        # For other frames, just gray out the depth plots
+                        axes[i, 1].set_facecolor('lightgray')
+                        axes[i, 1].text(0.5, 0.5, "No depth prediction\nfor this frame", 
+                                       horizontalalignment='center', verticalalignment='center')
+                        axes[i, 1].axis("off")
+                        
+                        axes[i, 2].set_facecolor('lightgray')
+                        axes[i, 2].text(0.5, 0.5, "No ground truth\nfor this frame", 
+                                       horizontalalignment='center', verticalalignment='center')
+                        axes[i, 2].axis("off")
+                
+                # Adjust spacing between subplots
+                plt.tight_layout()
+                
+                # Save the figure
                 save_path = os.path.join("./results", f"depth_comparison_{t0}.png")
                 directory = os.path.dirname(save_path)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 plt.savefig(save_path, bbox_inches="tight", dpi=300)
                 plt.close(fig)  # Close the figure to free memory
-                break  # Show only the first batch
-    
+                if batch_idx == 3:
+                    break
+
     def plot_results(self, results_dir: str = "./results"):
         plot_metrics(self.metrics, "./results")
 

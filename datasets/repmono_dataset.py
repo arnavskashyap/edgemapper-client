@@ -15,8 +15,8 @@ from datasets.nyu_dataset import NYUDataset
 class RepMonoUnsupervisedDataset(NYUDataset):
     def __init__(self, dataset_path, val, transform, *args, **kwargs):
         # Extract named arguments from kwargs, with default values
-        self.height = kwargs.pop("height", 480)
-        self.width = kwargs.pop("width", 640)
+        self.height = kwargs.pop("height", 240)
+        self.width = kwargs.pop("width", 320)
         self.frame_idxs = kwargs.pop("frame_idxs", [0, -1, 1])
         self.num_scales = kwargs.pop("num_scales", 4)
 

@@ -71,6 +71,25 @@ class Result(object):
         self.data_time, self.gpu_time = data_time, gpu_time
 
     def evaluate(self, output, target):
+        # Handle RGB depth maps by converting to grayscale
+        if len(target.shape) > 2 and target.shape[-1] == 3:
+            # Average across RGB channels
+            target = target.mean(dim=-1)
+
+        # Ensure output has same dimensions as target
+        if output.shape != target.shape:
+            import torch.nn.functional as F
+            output = F.interpolate(
+                output.unsqueeze(0).unsqueeze(0),
+                size=target.shape,
+                mode='bilinear',
+                align_corners=False
+            ).squeeze()
+        
+        # Ensure all values are positive for metrics calculation
+        output = torch.clamp(output, min=1e-8)
+        target = torch.clamp(target, min=1e-8)
+        
         abs_diff = (output - target).abs()
 
         self.mse = float((torch.pow(abs_diff, 2)).mean())

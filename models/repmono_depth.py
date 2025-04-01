@@ -75,8 +75,8 @@ class RepMonoUnsupervisedModel(BaseDepthModel):
         self.backproject_depth = {}
         self.project_3d = {}
         for scale in self.scales:
-            h = 480 // (2**scale)   #HARDCODE
-            w = 640 // (2**scale)   #HARDCODE
+            h = 240 // (2**scale)   #HARDCODE
+            w = 320 // (2**scale)   #HARDCODE
 
             self.backproject_depth[scale] = BackprojectDepth(
                 self.batch_size, h, w)    #HARDCODE

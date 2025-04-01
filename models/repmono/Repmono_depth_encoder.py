@@ -624,8 +624,8 @@ class RepMono(nn.Module):
     def __init__(self,
                  in_chans=3,
                  model='repmono',
-                 height=480,
-                 width=640,
+                 height=240,
+                 width=320,
                  global_block=[1, 1, 1],
                  global_block_type=['1', '1', '1'],
                  drop_path_rate=0.2,
@@ -643,7 +643,7 @@ class RepMono(nn.Module):
             self.num_ch_enc = np.array([48, 80, 128])
             self.depth = [4, 4, 7]
             self.dims = [48, 80, 128]
-            if height == 480 and width == 640:
+            if height == 240 and width == 320:
                 self.dilation = [[1, 2, 3], [1, 2, 3], [1, 2, 3, 2, 4, 6]]
             elif height == 320 and width == 1024:
                 self.dilation = [[1, 2, 5], [1, 2, 5], [1, 2, 5, 2, 4, 10]]

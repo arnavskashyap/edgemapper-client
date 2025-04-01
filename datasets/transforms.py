@@ -20,11 +20,11 @@ class Transforms:
         if model_name.lower() == "guidedepth" or model_name.lower() == "guidedepth-t" or model_name.lower() == "hybrid":
             if val:
                 return transforms.Compose(
-                    [Resize((480, 640)),
+                    [Resize((240, 320)),
                      ToTensor(test=True, maxDepth=10.0)])
             else:
                 return transforms.Compose([
-                    Resize((480, 640)),
+                    Resize((240, 320)),
                     RandomHorizontalFlip(),
                     RandomChannelSwap(0.5),
                     ToTensor(test=False, maxDepth=10.0)
@@ -35,7 +35,7 @@ class Transforms:
                 return transforms.Compose([
                     transforms.ToTensor(
                     ),  # Converts NumPy array to (1, H, W) tensor and scales if uint8
-                    transforms.Resize((480, 640)),  # Resize depth map
+                    transforms.Resize((240, 320)),  # Resize depth map
                     transforms.Lambda(lambda x: (x - x.min()) / (x.max(
                     ) - x.min() + 1e-8)),  # Min-Max Normalization
                 ])
@@ -44,7 +44,7 @@ class Transforms:
                     transforms.Lambda(
                         lambda x: torch.tensor(x, dtype=torch.float32).permute(
                             2, 0, 1)),  # Convert to tensor (C, H, W)
-                    transforms.Resize((480, 640)),  # Resize to (480, 640)
+                    transforms.Resize((240, 320)),  # Resize to (240, 320)
                     transforms.Lambda(
                         lambda x: x.unsqueeze(0))  # Add batch dimension
                 ])
