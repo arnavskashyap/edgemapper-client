@@ -48,7 +48,7 @@ class Transforms:
                     transforms.Lambda(
                         lambda x: x.unsqueeze(0))  # Add batch dimension
                 ])
-        elif model_name.lower() == "repmono-u":
+        elif model_name.lower() == "repmono-u" or model_name.lower() == "litegfm":
             return None
         else:
             raise ValueError(f"Unknown model: {model_name}.")

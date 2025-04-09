@@ -9,7 +9,8 @@ SUPPORTED_MODEL_DATASETS = {
     "repmono-u": RepMonoUnsupervisedDataset,
     "repmono-s": NYUDataset,
     "hybrid": RepMonoUnsupervisedDataset,
-    "guidedepth-t": GuideDepthDataset
+    "guidedepth-t": GuideDepthDataset,
+    "litegfm": RepMonoUnsupervisedDataset  # Using RepMonoUnsupervisedDataset for LiteGfm model
 }
 
 

@@ -2,12 +2,21 @@ from torch import nn as nn
 from models.guide_depth import GuideDepthModel
 from models.repmono_depth import RepMonoSupervisedModel, RepMonoUnsupervisedModel
 from models.hybrid import HybridModel
+import sys
+import os
+
+# Add the LiteGfm directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                             "Code of LiteGfm"))
+
+from models.litegfm_adapter import LiteGfmModel
 
 SUPPORTED_MODELS = {
     "guidedepth": GuideDepthModel,
     "repmono-u": RepMonoUnsupervisedModel,
     "repmono-s": RepMonoSupervisedModel,
-    "hybrid": HybridModel
+    "hybrid": HybridModel,
+    "litegfm": LiteGfmModel
 }
 
 
